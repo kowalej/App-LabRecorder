@@ -43,6 +43,12 @@ add_executable(${PROJECT_NAME} MACOSX_BUNDLE #WIN32
 	xdfwriter.cpp
 )
 
+add_executable(test_chunk7
+	test_chunk7.cpp
+	xdfwriter.h
+	xdfwriter.cpp
+)
+
 add_executable(testxdfwriter
 	test_xdf_writer.cpp
 	xdfwriter.h

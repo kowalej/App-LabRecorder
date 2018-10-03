@@ -27,7 +27,36 @@ enum class chunk_tag_t : uint16_t {
 	clockoffset = 4,  // ClockOffset chunk
 	boundary = 5,     // Boundary chunk
 	streamfooter = 6, // StreamFooter chunk
+	samples_v2 = 7,   // Samples chunk with optimized layout
 	undefined = 0
+};
+
+template<typename T>
+struct lsltype {
+};
+
+template<> struct lsltype<int8_t> {
+	static constexpr int8_t index = 0;
+};
+
+template<> struct lsltype<int16_t> {
+	static constexpr int8_t index = 1;
+};
+
+template<> struct lsltype<int32_t> {
+	static constexpr int8_t index = 2;
+};
+
+template<> struct lsltype<int64_t> {
+	static constexpr int8_t index = 3;
+};
+
+template<> struct lsltype<float> {
+	static constexpr int8_t index = 4;
+};
+
+template<> struct lsltype<double> {
+	static constexpr int8_t index = 5;
 };
 
 class XDFWriter {
@@ -60,6 +89,9 @@ public:
 	template <typename T>
 	void write_data_chunk_nested(streamid_t streamid, const std::vector<double>& timestamps,
 	                             const std::vector<std::vector<T>>& chunk);
+	template <typename T>
+	void write_better_data_chunk(streamid_t streamid, const std::vector<double>& timestamps,
+			const T* chuink, uint32_t n_samples, uint32_t n_channels);
 
 	/**
 	 * @brief write_stream_header Write the stream header, see also
@@ -156,3 +188,29 @@ void XDFWriter::write_data_chunk_nested(streamid_t streamid, const std::vector<d
 	std::lock_guard<std::mutex> lock(write_mut);
 	_write_chunk(chunk_tag_t::samples, outstr, &streamid);
 }
+
+template <typename T>
+void XDFWriter::write_better_data_chunk(streamid_t streamid, const std::vector<double>& timestamps,
+                                 const T* chunk, uint32_t n_samples, uint32_t n_channels) {
+	/**
+	  Samples data chunk: [Tag 7] [VLA ChunkLen] [StreamID] [uint32 NumSamples]
+	  [Timestamps, double]
+	  [NumSamples x NumChannels Sample]
+	  */
+	if (n_samples == 0) return;
+	if (timestamps.size() != n_samples)
+		throw std::runtime_error("timestamp / sample count mismatch");
+
+	auto sampletype = lsltype<T>::template index;
+	auto len = 2 * sizeof(uint32_t) + sizeof(sampletype) + timestamps.size() * sizeof(double) + n_samples * n_channels * sizeof(T);
+	std::lock_guard<std::mutex> lock(write_mut);
+	_write_chunk_header(chunk_tag_t::samples_v2, len, &streamid);
+	write_little_endian(file_, n_samples);
+	write_little_endian(file_, n_channels);
+	write_little_endian(file_, sampletype);
+	write_sample_values(file_, timestamps);
+	write_sample_values(file_, chunk, n_samples * n_channels);
+
+}
+
+

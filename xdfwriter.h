@@ -201,7 +201,7 @@ void XDFWriter::write_better_data_chunk(streamid_t streamid, const std::vector<d
 	if (timestamps.size() != n_samples)
 		throw std::runtime_error("timestamp / sample count mismatch");
 
-	auto sampletype = lsltype<T>::template index;
+	auto sampletype = lsltype<T>::index;
 	auto len = 2 * sizeof(uint32_t) + sizeof(sampletype) + timestamps.size() * sizeof(double) + n_samples * n_channels * sizeof(T);
 	std::lock_guard<std::mutex> lock(write_mut);
 	_write_chunk_header(chunk_tag_t::samples_v2, len, &streamid);

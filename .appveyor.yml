@@ -10,8 +10,8 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       QTCOMPILER: msvc2017_64
       QTVER: 5.11
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1604
-      DEPLOYNAME: Linux64-xenial
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1804
+      DEPLOYNAME: Linux64-bionic
 install:
 - cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip -FileName ninja.zip
 - cmd: appveyor DownloadFile %LSLDIST_URL%/%lslversion%/liblsl-%lslversion%-Win64.7z -FileName liblsl_x64.7z
